@@ -7,5 +7,13 @@
     "test": "node test.js"
   },
   "author": "Tyler Murphy",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "@types/node": "^10.12.21",
+    "tiny-glob": "^0.2.6",
+    "variable-diff": "^1.1.0"
+  },
+  "devDependencies": {
+    "typescript": "^3.3.1"
+  }
 }

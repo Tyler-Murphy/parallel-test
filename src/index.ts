@@ -1,5 +1,5 @@
-// add a mode where tests run sequentially and the amount of memory each one uses is recorded. Then, use the recorded memory usage to make sure memory doesn't run out when running tests concurrently.
-// add a runner to run a bunch of test files at once IN THE SAME PROCESS based on a glob pattern. There's probably a library to do it. If not, this can be modified from ~/code/send/node_modules/painless/bin/painless
+import debugLog from './debugLog'
+import * as variableDiff from 'variable-diff'
 
 const tests: Array<Test> = []
 let errorCount = 0
@@ -13,56 +13,70 @@ interface Test {
 
 export default test
 
-function test(description: Test['description'], testFunction: Test['testFunction']) {
+function test(description: Test['description'], testFunction: Test['testFunction']): void {
     if (testsRunning) {
         throw new Error(`Failed to register "${description}". Tests are already running, so it's not possible to register a new test. Tests must be defined synchronously.`)
     }
 
-    tests.push({
+    if (/^\d/.test(description)) {
+        throw new Error(`Test descriptions cannot start with a number: "${description}"`)
+    }
+
+    const test = {
         description,
         testFunction
-    })
+    }
+
+    debugLog('registering test', test)
+
+    tests.push(test)
 }
 
 // Run tests after synchronous test definitions happen. This means that tests MUST be defined synchronously.
-setImmediate(() => {
-    runTests()
-    .then(() => process.exit(errorCount > 0 ? 1 : 0))
+setImmediate(async () => {
+    const startTime = Date.now()
+    debugLog('running tests')
+
+    await runTests()
+
+    debugLog(`(${Date.now() - startTime} ms) done running tests`)
+
+    process.exit(errorCount > 0 ? 1 : 0)
 })
 
 async function runTests(): Promise<void> {
     writeOutput('TAP version 13')
+    writeOutput(`1..${tests.length}`)
 
     const pendingTests = tests.map(async test => {
+        const startTime = Date.now()
+        debugLog(`running test "${test.description}"`)
+
         try {
             await test.testFunction()
-            writeOutput(`ok  ${test.description}`)
+            writeOutput(`ok ${test.description}`)
         } catch(error) {
-            writeOutput(`not ok  ${test.description}`)
+            errorCount += 1
+
+            writeOutput(`not ok ${test.description}`)
             writeOutput(`  ---`)
             writeOutput(`    error:`)
             writeOutput(`      message: ${error.message}`)
-            writeOutput(`      diff: ${diff(error)}`)
+            writeOutput(`      expected: ${error.expected}`)
+            writeOutput(`      actual: ${error.actual}`)
+            writeOutput(`      diff: ${variableDiff(error.expected, error.actual).text}`)
             writeOutput(`      stack: ${cleanStack(error)}`)
             writeOutput(`  ...`)
+        } finally {
+            debugLog(`(${Date.now() - startTime} ms) done running test "${test.description}"`)
         }
     })
 
     await Promise.all(pendingTests)
 
-    writeOutput(`1..${tests.length}`)
     writeOutput(`# tests ${tests.length}`)
     writeOutput(`# pass ${tests.length - errorCount}`)
     writeOutput(`# fail ${errorCount}`)
-    writeOutput(`# ${errorCount === 0 ? 'passed' : 'failed'}!`)  // todo: check if this is part of the TAP specification
-}
-
-function diff({ expected, actual }): string {
-    if (!expected || !actual) {
-        return ''
-    }
-
-    return `need to implement diffing`  // todo: implement. There are libraries.
 }
 
 function cleanStack({ stack }: { stack: string }): string {
