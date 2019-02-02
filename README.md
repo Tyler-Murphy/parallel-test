@@ -1,6 +1,6 @@
 This test runner runs all asynchronous tests concurrently, which can speed up tests if a test suite includes lots of tests that perform asynchronous operations.
 
-I made this because I didn't find a runner that runs all tests at once, and was easy for me to understand.
+I made this because I didn't find a runner that runs all tests at once, and was easy for me to understand and extend.
 
 ### Usage
 
