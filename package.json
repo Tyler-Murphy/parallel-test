@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "description": "",
   "main": "index.js",
+  "bin": "dist/bin/test-all.js",
   "scripts": {
     "test": "node test.js"
   },

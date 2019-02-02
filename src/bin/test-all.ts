@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import glob = require('tiny-glob')
 import debugLog from '../debugLog'
 import { resolve as resolvePath } from 'path'
