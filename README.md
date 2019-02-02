@@ -1,6 +1,16 @@
 This test runner runs all asynchronous tests concurrently, which can speed up tests if a test suite includes lots of tests that perform asynchronous operations.
 
+I made this because I didn't find a runner that runs all tests at once, and was easy for me to understand.
+
 ### Usage
+
+An assertion library isn't included, so use whichever you'd like. If the errors thrown include `expected` and `actual` properties (like in the node core `assert` library), a diff will be displayed.
+
+A test ends when its code finishes running, or the promise it returns has settled.
+
+TAP messages are printed, so feel free to use whichever TAP formatter you like. [Tape has a nice list.](https://github.com/substack/tape#pretty-reporters)
+
+For usage examples, see the [`src/test/`](./src/test/) directory.
 
 ### Future improvements
 
