@@ -7,6 +7,9 @@
   "scripts": {
     "test": "node test.js"
   },
+  "engines": {
+    "node": ">=7.6"
+  },
   "author": "Tyler Murphy",
   "license": "ISC",
   "dependencies": {
