@@ -21,6 +21,7 @@ function test(description: Test['description'], testFunction: Test['testFunction
     }
 
     if (/^\d/.test(description)) {
+        // this is part of the TAP specification, to avoid ambiguity with other types of messages the specification defines
         throw new Error(`Test descriptions cannot start with a number: "${description}"`)
     }
 
