@@ -7,6 +7,6 @@
         "module": "commonjs",
         "rootDir": "src",
         "outDir": "dist",
-        "allowJs": false
+        "allowJs": false,
     }
 }

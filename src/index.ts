@@ -1,5 +1,7 @@
 import debugLog from './debugLog'
-import * as variableDiff from 'variable-diff'
+import * as cleanErrorStack from 'clean-stack'
+import * as getStackOnly from 'extract-stack'
+import * as util from 'util'
 
 const tests: Array<Test> = []
 let errorCount = 0
@@ -60,12 +62,10 @@ async function runTests(): Promise<void> {
 
             writeOutput(`not ok ${test.description}`)
             writeOutput(`  ---`)
-            writeOutput(`    error:`)
-            writeOutput(`      message: ${error.message}`)
-            writeOutput(`      expected: ${error.expected}`)
-            writeOutput(`      actual: ${error.actual}`)
-            writeOutput(`      diff: ${variableDiff(error.expected, error.actual).text}`)
-            writeOutput(`      stack: ${cleanStack(error)}`)
+            writeOutput(`  message: ${error.message}`)
+            writeOutput(`  expected: ${util.inspect(error.expected)}`)
+            writeOutput(`  actual: ${util.inspect(error.actual)}`)
+            writeOutput(`  stack: ${cleanStack(error)}`)
             writeOutput(`  ...`)
         } finally {
             debugLog(`(${Date.now() - startTime} ms) done running test "${test.description}"`)
@@ -80,13 +80,9 @@ async function runTests(): Promise<void> {
 }
 
 function cleanStack({ stack }: { stack: string }): string {
-    if (!stack) {
-        return ''
-    }
-
-    if (typeof stack !== 'string') {
-        return String(stack)
-    }
-
-    return stack  // todo: implement cleaning. There are libraries to do this.
+    return getStackOnly(
+        cleanErrorStack(stack, {
+            pretty: true
+        })
+    )
 }
