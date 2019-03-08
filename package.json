@@ -1,12 +1,18 @@
 {
-  "name": "parallel-test-runner",
+  "name": "parallel-test",
   "version": "0.0.1",
   "description": "",
-  "main": "index.js",
+  "main": "dist/index.js",
   "bin": "dist/bin/test-all.js",
   "scripts": {
-
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
   },
+  "files": [
+    "dist/",
+    "!dist/test/",
+    "!*.js.map"
+  ],
   "engines": {
     "node": ">=7.6"
   },
