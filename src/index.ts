@@ -40,11 +40,12 @@ setImmediate(async () => {
     const startTime = Date.now()
     debugLog('running tests')
 
+    testsRunning = true
     await runTests()
 
     debugLog(`(${Date.now() - startTime} ms) done running tests`)
 
-    process.exit(errorCount > 0 ? 1 : 0)
+    process.exitCode = errorCount > 0 ? 1 : 0
 })
 
 async function runTests(): Promise<void> {
