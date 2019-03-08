@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "bin": "dist/bin/test-all.js",
-  "scripts": {},
+  "scripts": {
+
+  },
   "engines": {
     "node": ">=7.6"
   },

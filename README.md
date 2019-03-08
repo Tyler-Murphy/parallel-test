@@ -10,6 +10,8 @@ A test ends when its code finishes running, or the promise it returns has settle
 
 TAP messages are printed, so feel free to use whichever TAP formatter you like. [Tape has a nice list.](https://github.com/substack/tape#pretty-reporters)
 
+Tests must be defined synchronously.
+
 For usage examples, see the [`src/test/`](./src/test/) directory.
 
 ### Future improvements
