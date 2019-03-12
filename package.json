@@ -1,6 +1,6 @@
 {
   "name": "parallel-test",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "",
   "main": "dist/index.js",
   "bin": "dist/bin/test-all.js",
