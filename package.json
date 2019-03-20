@@ -27,5 +27,9 @@
   "devDependencies": {
     "@types/clean-stack": "^1.3.0",
     "typescript": "^3.3.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Tyler-Murphy/parallel-test.git"
   }
 }
