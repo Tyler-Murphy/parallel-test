@@ -6,7 +6,7 @@ import * as util from 'util'
 const tests: Array<Test> = []
 let errorCount = 0
 let testsRunning = false
-const writeOutput = (line: string) => process.stdout.write(line + '\n')
+const writeOutput = (line: string) => console.log(line)
 
 interface Test {
     description: string,
