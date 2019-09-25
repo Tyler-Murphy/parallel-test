@@ -82,6 +82,8 @@ setImmediate(async () => {
     debugLog(`(${Date.now() - startTime} ms) done running tests`)
 
     process.exitCode = errorCount > 0 ? 1 : 0
+
+    debugLog(`Sending kill signal SIGINT to self (process ID ${process.pid}). There are ${process.listenerCount(`SIGINT`)} current listeners for this signal.`)
     process.kill(process.pid, `SIGINT`)  // exit the process, but allow handlers to catch the `SIGINT` and clean up as necessary. This is a gentler alternative to `process.exit()`.
 })
 
