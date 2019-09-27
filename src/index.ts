@@ -7,6 +7,7 @@ const tests: Array<Test> = []
 let successCount = 0
 let errorCount = 0
 let testsRunning = false
+let testsTimedOut = false
 const writeOutput = (line: string) => console.log(line)
 let testSuiteOptions: TestSuiteOptions = {
     maximumDurationSeconds: 3600,
@@ -83,8 +84,10 @@ setImmediate(async () => {
 
     process.exitCode = errorCount > 0 ? 1 : 0
 
-    debugLog(`Sending kill signal SIGINT to self (process ID ${process.pid}). There are ${process.listenerCount(`SIGINT`)} current listeners for this signal.`)
-    process.kill(process.pid, `SIGINT`)  // exit the process, but allow handlers to catch the `SIGINT` and clean up as necessary. This is a gentler alternative to `process.exit()`.
+    if (testsTimedOut) {
+        debugLog(`Sending kill signal SIGINT to self (process ID ${process.pid}) because tests timed out. There are ${process.listenerCount(`SIGINT`)} current listeners for this signal.`)
+        process.kill(process.pid, `SIGINT`)  // exit the process, but allow handlers to catch the `SIGINT` and clean up as necessary. This is a gentler alternative to `process.exit()`.
+    }
 })
 
 async function runTests(options: TestSuiteOptions): Promise<void> {
@@ -116,9 +119,10 @@ async function runTests(options: TestSuiteOptions): Promise<void> {
         }
     })
 
-    const pendingSuiteTimeout = new Promise((resolve, reject) => {
+    const pendingSuiteTimeout = new Promise(resolve => {
         setTimeout(() => {
             writeOutput(`# reached ${options.maximumDurationSeconds} seconds, the configured maximumDurationSeconds, timing out`)
+            testsTimedOut = true
             resolve()
         }, options.maximumDurationSeconds * 1e3)
         .unref()  // make sure this doesn't prevent tests from exiting if it's the only pending operation
