@@ -137,7 +137,7 @@ async function runTests(options: TestSuiteOptions): Promise<void> {
     writeOutput(`# tests ${tests.length}`)
     writeOutput(`# pass ${successCount}`)
     writeOutput(`# fail ${errorCount}`)
-    writeOutput(`# skipped ${tests.length - successCount - errorCount}`)
+    writeOutput(`# unfinished ${tests.length - successCount - errorCount}`)
 }
 
 function cleanStack({ stack }: { stack: string }): string {
