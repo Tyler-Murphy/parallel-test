@@ -33,6 +33,11 @@ Promise.all(paths.map(path => glob(path)))
     })
   })
 
+  /**
+   * We load ../index here, instead of at the top of the file, because it must be loaded in the same synchronous chunk of code as test registration (caused by the `require` just above here).
+   * If we were to load `index` asynchronously **before** registering tests, the `setImmediate` in `index` would run the currently-registered tests (none of them) before any could be registered. The test process would exit without running any tests.
+   * If we were to load `index` asynchronously **after** registering tests, we wouldn't be able to set options, because the test run would have started, and options aren't allowed to be set once the test run has begun.
+   */
   const setTestSuiteOptions = require('../index').setTestSuiteOptions  // import late so that we don't trigger test runs by loading the module and causing its `setImmediate` to run and start the tests
 
   setTestSuiteOptions({
