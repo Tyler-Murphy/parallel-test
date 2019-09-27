@@ -12,7 +12,7 @@ const writeOutput = (line: string) => console.log(line)
 let testSuiteOptions: TestSuiteOptions = {
     maximumDurationSeconds: 3600,
 }
-let testSuiteOptionsSet = false
+let testSuiteOptionsHaveBeenSet = false
 
 interface Test {
     description: string,
@@ -60,11 +60,11 @@ function setTestSuiteOptions(newOptions: Partial<TestSuiteOptions>): void {
         throw new Error(`Cannot set test suite options once tests are already running`)
     }
 
-    if (testSuiteOptionsSet) {
+    if (testSuiteOptionsHaveBeenSet) {
         throw new Error(`Can only set test suite options once`)
     }
 
-    testSuiteOptionsSet = true
+    testSuiteOptionsHaveBeenSet = true
 
     testSuiteOptions = {
         ...testSuiteOptions,
