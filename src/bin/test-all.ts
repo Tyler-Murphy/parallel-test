@@ -7,7 +7,7 @@ import { resolve as resolvePath } from 'path'
 
 program
 .option('--maximumDurationSeconds <maximumDurationSeconds>', 'The maximum amount of time that tests in the suite are allowed to run. Defaults to `3600`')
-.option('--path <path>', 'The path to the test file(s) to run. Can be a glob pattern to run many at once. Can be repeated', (newPath, existingPaths) => [...existingPaths, newPath], [])
+.option('--path <path>', 'The path to the test file(s) to run. Can be a glob pattern to run many at once. Can be repeated, e.g., --path path1 --path path2', (newPath, existingPaths) => [...existingPaths, newPath], [])
 
 program.parse(process.argv)
 
