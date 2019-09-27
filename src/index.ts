@@ -85,6 +85,7 @@ setImmediate(async () => {
     process.exitCode = errorCount > 0 ? 1 : 0
 
     if (testsTimedOut) {
+        // At this point, all tests that fit into the timeout are done running and all results have been reported. We need to forcefully end the process so that remaining tests that are taking too long to run end, and don't keep the process alive.
         debugLog(`Sending kill signal SIGINT to self (process ID ${process.pid}) because tests timed out. There are ${process.listenerCount(`SIGINT`)} current listeners for this signal.`)
         process.kill(process.pid, `SIGINT`)  // exit the process, but allow handlers to catch the `SIGINT` and clean up as necessary. This is a gentler alternative to `process.exit()`.
     }
