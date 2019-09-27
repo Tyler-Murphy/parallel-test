@@ -21,6 +21,7 @@
   "dependencies": {
     "@types/node": "^10.12.21",
     "clean-stack": "^2.0.0",
+    "commander": "^3.0.1",
     "extract-stack": "^1.0.0",
     "tiny-glob": "^0.2.6"
   },
