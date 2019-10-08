@@ -2,6 +2,8 @@ import debugLog from './debugLog'
 import * as cleanErrorStack from 'clean-stack'
 import * as getStackOnly from 'extract-stack'
 import * as util from 'util'
+import { EventEmitter } from 'events'
+import TypedEmitter from 'typed-emitter'
 
 const tests: Array<Test> = []
 let successCount = 0
@@ -13,6 +15,10 @@ let testSuiteOptions: TestSuiteOptions = {
     maximumDurationSeconds: 3600,
 }
 let testSuiteOptionsHaveBeenSet = false
+const testEvents = new EventEmitter() as TypedEmitter<{
+    suiteFinished: () => void,
+}>
+
 
 interface Test {
     description: string,
@@ -32,7 +38,8 @@ interface TestSuiteOptions {
 
 export default test
 export {
-    setTestSuiteOptions
+    setTestSuiteOptions,
+    testEvents,
 }
 
 function test(description: Test['description'], testFunction: Test['testFunction']): void {
@@ -81,6 +88,7 @@ setImmediate(async () => {
     await runTests(testSuiteOptions)
 
     debugLog(`(${Date.now() - startTime} ms) done running tests`)
+    testEvents.emit('suiteFinished')
 
     process.exitCode = errorCount > 0 ? 1 : 0
 

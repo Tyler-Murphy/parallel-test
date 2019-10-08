@@ -12,6 +12,8 @@ TAP messages are printed, so feel free to use whichever TAP formatter you like. 
 
 Tests must be defined synchronously.
 
+Events are emitted as tests run. The emitter is exported as `testEvents` from the main file. It's typed, so inspect its types to see which events are available.
+
 For usage examples, see the [`src/test/`](./src/test/) directory.
 
 ### Future improvements
