@@ -44,7 +44,9 @@ export {
 
 function test(description: Test['description'], testFunction: Test['testFunction']): void {
     if (testsRunning) {
-        throw new Error(`Failed to register "${description}". Tests are already running, so it's not possible to register a new test. Tests must be defined synchronously.`)
+        throw new Error(`Failed to register "${description}". Tests are already running, so it's not possible to register a new test. Tests must be defined synchronously after the first test is defined.`)
+    } else {
+        startTestsImmediatelyAsynchronously()
     }
 
     if (/^\d/.test(description)) {
@@ -79,25 +81,34 @@ function setTestSuiteOptions(newOptions: Partial<TestSuiteOptions>): void {
     }
 }
 
-// Run tests after synchronous test definitions happen. This means that tests MUST be defined synchronously.
-setImmediate(async () => {
-    const startTime = Date.now()
-    debugLog('running tests')
-
-    testsRunning = true
-    await runTests(testSuiteOptions)
-
-    debugLog(`(${Date.now() - startTime} ms) done running tests`)
-    testEvents.emit('suiteFinished')
-
-    process.exitCode = errorCount > 0 ? 1 : 0
-
-    if (testsTimedOut) {
-        // At this point, all tests that fit into the timeout are done running and all results have been reported. We need to forcefully end the process so that remaining tests that are taking too long to run end, and don't keep the process alive.
-        debugLog(`Sending kill signal SIGINT to self (process ID ${process.pid}) because tests timed out. There are ${process.listenerCount(`SIGINT`)} current listeners for this signal.`)
-        process.kill(process.pid, `SIGINT`)  // exit the process, but allow handlers to catch the `SIGINT` and clean up as necessary. This is a gentler alternative to `process.exit()`.
+// Tests MUST be defined synchronously after the first definition happens.
+let pendingTestRun: NodeJS.Immediate
+function startTestsImmediatelyAsynchronously() {
+    if (pendingTestRun) {
+        return
     }
-})
+
+    debugLog('registering test run in setImmediate callback')
+
+    pendingTestRun = setImmediate(async () => {
+        const startTime = Date.now()
+        debugLog('running tests')
+
+        testsRunning = true
+        await runTests(testSuiteOptions)
+
+        debugLog(`(${Date.now() - startTime} ms) done running tests`)
+        testEvents.emit('suiteFinished')
+
+        process.exitCode = errorCount > 0 ? 1 : 0
+
+        if (testsTimedOut) {
+            // At this point, all tests that fit into the timeout are done running and all results have been reported. We need to forcefully end the process so that remaining tests that are taking too long to run end, and don't keep the process alive.
+            debugLog(`Sending kill signal SIGINT to self (process ID ${process.pid}) because tests timed out. There are ${process.listenerCount(`SIGINT`)} current listeners for this signal.`)
+            process.kill(process.pid, `SIGINT`)  // exit the process, but allow handlers to catch the `SIGINT` and clean up as necessary. This is a gentler alternative to `process.exit()`.
+        }
+    })
+}
 
 async function runTests(options: TestSuiteOptions): Promise<void> {
     debugLog(`running test suite with options ${JSON.stringify(options)}`)

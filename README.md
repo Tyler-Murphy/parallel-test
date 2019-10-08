@@ -10,7 +10,7 @@ A test ends when its code finishes running, or the promise it returns has settle
 
 TAP messages are printed, so feel free to use whichever TAP formatter you like. [Tape has a nice list.](https://github.com/substack/tape#pretty-reporters)
 
-Tests must be defined synchronously.
+As soon as a test is registered, the test suite run will be queued to run in a `setImmediate` callback. This means that tests must be registered synchronously after the first test is registered.
 
 Events are emitted as tests run. The emitter is exported as `testEvents` from the main file. It's typed, so inspect its types to see which events are available.
 
