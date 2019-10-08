@@ -24,4 +24,3 @@ test('slow failure', async () => {
     await delayOneSecond()
     assert.equal(1, 2)
 })
-
