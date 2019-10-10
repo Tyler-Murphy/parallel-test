@@ -16,9 +16,19 @@ let testSuiteOptions: TestSuiteOptions = {
 }
 let testSuiteOptionsHaveBeenSet = false
 const testEvents = new EventEmitter() as TypedEmitter<{
-    suiteFinished: () => void,
+    globComplete: (information: EventDuration) => void,
+    globbedFileLoaded: (information: EventDuration) => void,
+    suiteStarted: () => void
+    suiteFinished: (information: EventDuration) => void,
+    suiteTimedOut: () => void,
+    testRegistered: () => void,
+    testStarted: () => void,
+    testFinished: (information: EventDuration) => void,
 }>
 
+interface EventDuration {
+    durationMilliseconds: number
+}
 
 interface Test {
     description: string,
@@ -60,6 +70,7 @@ function test(description: Test['description'], testFunction: Test['testFunction
     }
 
     debugLog('registering test', test)
+    testEvents.emit('testRegistered')
 
     tests.push(test)
 }
@@ -93,12 +104,13 @@ function startTestsImmediatelyAsynchronously() {
     pendingTestRun = setImmediate(async () => {
         const startTime = Date.now()
         debugLog('running tests')
+        testEvents.emit('suiteStarted')
 
         testsRunning = true
         await runTests(testSuiteOptions)
 
         debugLog(`(${Date.now() - startTime} ms) done running tests`)
-        testEvents.emit('suiteFinished')
+        testEvents.emit('suiteFinished', { durationMilliseconds: Date.now() - startTime })
 
         process.exitCode = errorCount > 0 ? 1 : 0
 
@@ -119,6 +131,7 @@ async function runTests(options: TestSuiteOptions): Promise<void> {
     const pendingTests = tests.map(async test => {
         const startTime = Date.now()
         debugLog(`running test "${test.description}"`)
+        testEvents.emit('testStarted')
 
         try {
             await test.testFunction()
@@ -136,12 +149,14 @@ async function runTests(options: TestSuiteOptions): Promise<void> {
             writeOutput(`  ...`)
         } finally {
             debugLog(`(${Date.now() - startTime} ms) done running test "${test.description}"`)
+            testEvents.emit('testFinished', { durationMilliseconds: Date.now() - startTime })
         }
     })
 
     const pendingSuiteTimeout = new Promise(resolve => {
         setTimeout(() => {
             writeOutput(`# reached ${options.maximumDurationSeconds} seconds, the configured maximumDurationSeconds, timing out`)
+            testEvents.emit('suiteTimedOut')
             testsTimedOut = true
             resolve()
         }, options.maximumDurationSeconds * 1e3)

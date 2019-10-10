@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { testEvents } from '../index'
 import * as program from 'commander'
 import glob = require('tiny-glob')
 import debugLog from '../debugLog'
@@ -22,6 +23,7 @@ debugLog('finding matches for', paths)
 
 Promise.all(paths.map(path => glob(path)))
 .then(matchGroups => {
+  testEvents.emit('globComplete', { durationMilliseconds: Date.now() - startTime })
   debugLog(`(${Date.now() - startTime} ms) found matches:`, matchGroups)
 
   matchGroups.forEach(matches => {
@@ -30,6 +32,7 @@ Promise.all(paths.map(path => glob(path)))
 
       require(resolvePath(process.cwd(), match))
       debugLog(`(${Date.now() - startTime} ms) loaded ${match}`)
+      testEvents.emit('globbedFileLoaded', { durationMilliseconds: Date.now() - startTime })
     })
   })
 
