@@ -122,9 +122,18 @@ async function runTests(options: TestSuiteOptions): Promise<void> {
 
         try {
             await test.testFunction()
+
+            if (testsTimedOut) {
+                return debugLog(`test ${test.description} finished after timeout... suppressing success output`)
+            }
+
             writeOutput(`ok ${test.description}`)
             successCount += 1
         } catch(error) {
+            if (testsTimedOut) {
+                return debugLog(`test ${test.description} finished after timeout... suppressing error output: ${error.message}`)
+            }
+
             errorCount += 1
 
             writeOutput(`not ok ${test.description}`)
