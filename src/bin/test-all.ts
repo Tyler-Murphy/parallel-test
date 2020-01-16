@@ -7,6 +7,7 @@ import { resolve as resolvePath } from 'path'
 
 program
 .option('--maximumDurationSeconds <maximumDurationSeconds>', 'The maximum amount of time that tests in the suite are allowed to run. Defaults to `3600`')
+.option('--exitOnFailure', 'Exit immediately if a test fails, rather than continuing to run the rest of the tests')
 .option('--path <path>', 'The path to the test file(s) to run. Can be a glob pattern to run many at once. Can be repeated, e.g., --path path1 --path path2', (newPath, existingPaths) => [...existingPaths, newPath], [])
 
 program.parse(process.argv)
@@ -41,6 +42,7 @@ Promise.all(paths.map(path => glob(path)))
   const setTestSuiteOptions = require('../index').setTestSuiteOptions  // import late so that we don't trigger test runs by loading the module and causing its `setImmediate` to run and start the tests
 
   setTestSuiteOptions({
-    ...(program.maximumDurationSeconds && { maximumDurationSeconds: program.maximumDurationSeconds })
+    ...(program.maximumDurationSeconds && { maximumDurationSeconds: program.maximumDurationSeconds }),
+    ...(program.exitOnFailure && { exitOnFailure: program.exitOnFailure }),
   })
 })

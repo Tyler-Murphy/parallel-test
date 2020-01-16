@@ -9,14 +9,17 @@ const tests: Array<Test> = []
 let successCount = 0
 let errorCount = 0
 let testsRunning = false
-let testsTimedOut = false
+/** This can be set to true by any situation that causes the test run to exit early, before all the tests have run, like a suite timeout, or an early exit due to an error. */
+let exitedEarly = false
 const writeOutput = (line: string) => console.log(line)
 let testSuiteOptions: TestSuiteOptions = {
     maximumDurationSeconds: 3600,
+    exitOnFailure: false,
 }
 let testSuiteOptionsHaveBeenSet = false
 const testEvents = new EventEmitter() as TypedEmitter<{
     suiteFinished: () => void,
+    testError: (test: Test, error: Error) => void,
 }>
 
 
@@ -34,6 +37,14 @@ interface TestSuiteOptions {
      *      If there were no failures, exit with a success
      */
     maximumDurationSeconds: number,
+
+    /**
+     * Whether to exit immediately when a test fails. Defaults to `true`.
+     *
+     * If the value is `true`, when a test fails, the rest of the test run will be canceled.
+     * If the value is `false`, when a test fails, the rest of the test run will continue.
+     */
+    exitOnFailure: boolean
 }
 
 export default test
@@ -102,9 +113,9 @@ function startTestsImmediatelyAsynchronously() {
 
         process.exitCode = errorCount > 0 ? 1 : 0
 
-        if (testsTimedOut) {
-            // At this point, all tests that fit into the timeout are done running and all results have been reported. We need to forcefully end the process so that remaining tests that are taking too long to run end, and don't keep the process alive.
-            debugLog(`Sending kill signal SIGINT to self (process ID ${process.pid}) because tests timed out. There are ${process.listenerCount(`SIGINT`)} current listeners for this signal.`)
+        if (exitedEarly) {
+            // We need to forcefully end the process so that remaining tests end, and don't keep the process alive.
+            debugLog(`Sending kill signal SIGINT to self (process ID ${process.pid}) because the test suite is exiting early. There are ${process.listenerCount(`SIGINT`)} current listeners for this signal.`)
             process.kill(process.pid, `SIGINT`)  // exit the process, but allow handlers to catch the `SIGINT` and clean up as necessary. This is a gentler alternative to `process.exit()`.
         }
     })
@@ -123,18 +134,19 @@ async function runTests(options: TestSuiteOptions): Promise<void> {
         try {
             await test.testFunction()
 
-            if (testsTimedOut) {
-                return debugLog(`test ${test.description} finished after timeout... suppressing success output`)
+            if (exitedEarly) {
+                return debugLog(`test ${test.description} finished after early exit... suppressing success output`)
             }
 
             writeOutput(`ok ${test.description}`)
             successCount += 1
         } catch(error) {
-            if (testsTimedOut) {
-                return debugLog(`test ${test.description} finished after timeout... suppressing error output: ${error.message}`)
+            if (exitedEarly) {
+                return debugLog(`test ${test.description} finished after early exit... suppressing error output: ${error.message}`)
             }
 
             errorCount += 1
+            testEvents.emit('testError', test, error)
 
             writeOutput(`not ok ${test.description}`)
             writeOutput(`  ---`)
@@ -151,15 +163,27 @@ async function runTests(options: TestSuiteOptions): Promise<void> {
     const pendingSuiteTimeout = new Promise(resolve => {
         setTimeout(() => {
             writeOutput(`# reached ${options.maximumDurationSeconds} seconds, the configured maximumDurationSeconds, timing out`)
-            testsTimedOut = true
+            exitedEarly = true
             resolve()
         }, options.maximumDurationSeconds * 1e3)
         .unref()  // make sure this doesn't prevent tests from exiting if it's the only pending operation
     })
 
+    /** This is used to exit early if early exits due to failures are enabled and there's an error */
+    const pendingTestError = new Promise(resolve => {
+        if (options.exitOnFailure) {
+            testEvents.once('testError', () => {
+                writeOutput(`# exiting early because a test failed and early exits are enabled`)
+                exitedEarly = true
+                resolve()
+            })
+        }
+    })
+
     await Promise.race([
         Promise.all(pendingTests),
         pendingSuiteTimeout,
+        pendingTestError,
     ])
 
     writeOutput(`# tests ${tests.length}`)
