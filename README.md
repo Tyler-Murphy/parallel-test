@@ -1,10 +1,10 @@
 This test runner runs all asynchronous tests concurrently, which can speed up tests if a test suite includes lots of tests that perform asynchronous operations.
 
-I made this because I didn't find a runner that runs all tests at once, and was easy for me to understand and extend.
+I made this because I didn't find another runner that runs all tests at once.
 
 ### Usage
 
-An assertion library isn't included, so use whichever you'd like. If the errors thrown include `expected` and `actual` properties (like in the node core `assert` library), a diff will be displayed.
+An assertion library isn't included, so use whichever you'd like. I like to use node's `assert` library. If the errors thrown include `expected` and `actual` properties (like in the node `assert` library), a diff will be displayed.
 
 A test ends when its code finishes running, or the promise it returns has settled.
 
@@ -16,9 +16,19 @@ Events are emitted as tests run. The emitter is exported as `testEvents` from th
 
 For usage examples, see the [`src/test/`](./src/test/) directory.
 
+### How to make tests safe to run with other tests
+
+Many tests are written assuming that they'll run on their own, and won't interact with other tests, and as a result, aren't safe to run at the same time as each other. For example, a test that reads from a database might set up the test by writing a record, and then read the written record by assuming that its auto-generated sequential ID is `1`. If many tests are running concurrently, such assumptions aren't safe, and will result in test failures.
+
+Generally, to write tests that are safe to run with other tests:
+- Never use hard-coded identifiers or data that cannot be unique.
+  - For example, rather than assuming that the record you wrote has ID `1`, ask the database to return the auto-generated ID when the record is created, and use it to retrieve the record later.
+  - For example, if there's a unique constraint on email addresses, use randomly-generated addresses.
+- If rate limits are a concern, make sure the operations your tests perform are rate limited, rather than relying on tests being rate limited.
+
+
 ### Future improvements
 
-* a mode where tests are run sequentially, and the memory usage of each test is recorded. Then, use the recorded memory usage to run only as many tests as are supported by the available memory.
 * a "watch" mode, in which:
   * The results of globbing are cached
   * The modules loaded are cached, and only added, removed, or updated as necessary
