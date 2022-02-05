@@ -175,28 +175,43 @@ function cleanStack({ stack }: { stack: string }): string {
 }
 
 async function runTestsAndHandleExiting() {
-    if (testsRunning) {
-        throw new Error(`Tests are already running. Can't run again.`)
-    }
-
     const startTime = Date.now()
-    debugLog('running tests')
+    debugLog(`running tests after 'setImmediate' delay`)
 
-    testsRunning = true
-    await runTests(testSuiteOptions)
+    setImmediate(async () => {
+        if (testsRunning) {
+            throw new Error(`Tests are already running. Can't run again.`)
+        }
 
-    debugLog(`(${Date.now() - startTime} ms) done running tests`)
-    testEvents.emit('suiteFinished')
+        testsRunning = true
+        await runTests(testSuiteOptions)
 
-    process.exitCode = errorCount > 0 ? 1 : 0
+        debugLog(`(${Date.now() - startTime} ms) done running tests`)
+        testEvents.emit('suiteFinished')
 
-    if (exitedEarly) {
-        // We need to forcefully end the process so that remaining tests end, and don't keep the process alive.
-        debugLog(`Sending kill signal SIGINT to self (process ID ${process.pid}) because the test suite is exiting early. There are ${process.listenerCount(`SIGINT`)} current listeners for this signal.`)
-        process.kill(process.pid, `SIGINT`)  // exit the process, but allow handlers to catch the `SIGINT` and clean up as necessary. This is a gentler alternative to `process.exit()`.
-    }
+        process.exitCode = errorCount > 0 ? 1 : 0
+
+        if (exitedEarly) {
+            // We need to forcefully end the process so that remaining tests end, and don't keep the process alive.
+            debugLog(`Sending kill signal SIGINT to self (process ID ${process.pid}) because the test suite is exiting early. There are ${process.listenerCount(`SIGINT`)} current listeners for this signal.`)
+            process.kill(process.pid, `SIGINT`)  // exit the process, but allow handlers to catch the `SIGINT` and clean up as necessary. This is a gentler alternative to `process.exit()`.
+        }
+    })
 }
 
-testEvents.once(`testRegistered`, runTestsAndHandleExiting) // Make sure tests run if a test module is run directly
-testEvents.once(`suiteLoading`, () => testEvents.removeListener(`testRegistered`, runTestsAndHandleExiting)) // If tests are being loaded via `test-all`, make sure test registration in test modules doesn't trigger test runs, since we need to wait for all modules to be loaded by `test-all`
+// Make sure tests run if a test module is run directly
+testEvents.once(`testRegistered`, runTestsAndHandleExiting)
+
+// If tests are being loaded via `test-all`, make sure test registration in test modules doesn't trigger test runs, since we need to wait for all modules to be loaded by `test-all`
+testEvents.once(`suiteLoading`, () => {
+    debugLog(`Removing 'testRegistered' listener that would start tests because the received 'suiteLoading' event indicates that more modules might be loaded`)
+
+    const listenerCount = testEvents.listenerCount(`testRegistered`)
+
+    testEvents.removeListener(`testRegistered`, runTestsAndHandleExiting)
+
+    if (testEvents.listenerCount(`testRegistered`) !== listenerCount - 1) {
+        throw new Error(`Failed to remove 'testRegistered' listener that triggers test start`)
+    }
+})
 testEvents.once(`suiteLoaded`, runTestsAndHandleExiting)

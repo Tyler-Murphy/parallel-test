@@ -33,19 +33,18 @@ if (paths.length === 0) {
 
 debugLog('finding matches for', paths)
 
-const matchGroups = await Promise.all(paths.map(path => glob(path)))
+const matches = (await Promise.all(paths.map(path => glob(path)))).flat()
 
-debugLog(`(${Date.now() - startTime} ms) found matches:`, matchGroups)
+debugLog(`(${Date.now() - startTime} ms) found matches:`, matches)
 
 await Promise.all(
-  matchGroups.flatMap(matches =>
-    matches.map(async match => {
-      const startTime = Date.now()
+  matches.map(async match => {
+    const startTime = Date.now()
 
-      await import(resolvePath(process.cwd(), match))
-      debugLog(`(${Date.now() - startTime} ms) loaded ${match}`)
-    })
-  )
+    debugLog(`Starting load ${match}`)
+    await import(resolvePath(process.cwd(), match))
+    debugLog(`(${Date.now() - startTime} ms) loaded ${match}`)
+  })
 )
 
 testEvents.emit(`suiteLoaded`)
