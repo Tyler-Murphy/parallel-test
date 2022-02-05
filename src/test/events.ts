@@ -2,7 +2,7 @@
  * Running this file manually should log a message when the tests are done
  */
 
-import test, { testEvents } from '../index'
+import test, { testEvents } from '../index.js'
 import * as assert from 'assert'
 
 test('fast success', () => {})

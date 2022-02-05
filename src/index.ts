@@ -1,6 +1,6 @@
-import debugLog from './debugLog'
-import * as cleanErrorStack from 'clean-stack'
-import * as getStackOnly from 'extract-stack'
+import debugLog from './debugLog.js'
+import cleanErrorStack from 'clean-stack'
+import getStackOnly from 'extract-stack'
 import * as util from 'util'
 import { EventEmitter } from 'events'
 import TypedEmitter from 'typed-emitter'
@@ -18,6 +18,9 @@ let testSuiteOptions: TestSuiteOptions = {
 }
 let testSuiteOptionsHaveBeenSet = false
 const testEvents = new EventEmitter() as TypedEmitter<{
+    testRegistered: () => void,
+    suiteLoading: () => void,
+    suiteLoaded: () => void,
     suiteFinished: () => void,
     testError: (test: Test, error: Error) => void,
 }>
@@ -56,8 +59,6 @@ export {
 function test(description: Test['description'], testFunction: Test['testFunction']): void {
     if (testsRunning) {
         throw new Error(`Failed to register "${description}". Tests are already running, so it's not possible to register a new test. Tests must be defined synchronously after the first test is defined.`)
-    } else {
-        startTestsImmediatelyAsynchronously()
     }
 
     if (/^\d/.test(description)) {
@@ -73,6 +74,8 @@ function test(description: Test['description'], testFunction: Test['testFunction
     debugLog('registering test', test)
 
     tests.push(test)
+
+    setImmediate(() => testEvents.emit(`suiteLoaded`))
 }
 
 function setTestSuiteOptions(newOptions: Partial<TestSuiteOptions>): void {
@@ -90,35 +93,6 @@ function setTestSuiteOptions(newOptions: Partial<TestSuiteOptions>): void {
         ...testSuiteOptions,
         ...newOptions,
     }
-}
-
-// Tests MUST be defined synchronously after the first definition happens.
-let pendingTestRun: NodeJS.Immediate
-function startTestsImmediatelyAsynchronously() {
-    if (pendingTestRun) {
-        return
-    }
-
-    debugLog('registering test run in setImmediate callback')
-
-    pendingTestRun = setImmediate(async () => {
-        const startTime = Date.now()
-        debugLog('running tests')
-
-        testsRunning = true
-        await runTests(testSuiteOptions)
-
-        debugLog(`(${Date.now() - startTime} ms) done running tests`)
-        testEvents.emit('suiteFinished')
-
-        process.exitCode = errorCount > 0 ? 1 : 0
-
-        if (exitedEarly) {
-            // We need to forcefully end the process so that remaining tests end, and don't keep the process alive.
-            debugLog(`Sending kill signal SIGINT to self (process ID ${process.pid}) because the test suite is exiting early. There are ${process.listenerCount(`SIGINT`)} current listeners for this signal.`)
-            process.kill(process.pid, `SIGINT`)  // exit the process, but allow handlers to catch the `SIGINT` and clean up as necessary. This is a gentler alternative to `process.exit()`.
-        }
-    })
 }
 
 async function runTests(options: TestSuiteOptions): Promise<void> {
@@ -160,7 +134,7 @@ async function runTests(options: TestSuiteOptions): Promise<void> {
         }
     })
 
-    const pendingSuiteTimeout = new Promise(resolve => {
+    const pendingSuiteTimeout = new Promise<void>(resolve => {
         setTimeout(() => {
             writeOutput(`# reached ${options.maximumDurationSeconds} seconds, the configured maximumDurationSeconds, timing out`)
             exitedEarly = true
@@ -170,7 +144,7 @@ async function runTests(options: TestSuiteOptions): Promise<void> {
     })
 
     /** This is used to exit early if early exits due to failures are enabled and there's an error */
-    const pendingTestError = new Promise(resolve => {
+    const pendingTestError = new Promise<void>(resolve => {
         if (options.exitOnFailure) {
             testEvents.once('testError', () => {
                 writeOutput(`# exiting early because a test failed and early exits are enabled`)
@@ -199,3 +173,30 @@ function cleanStack({ stack }: { stack: string }): string {
         })
     )
 }
+
+async function runTestsAndHandleExiting() {
+    if (testsRunning) {
+        throw new Error(`Tests are already running. Can't run again.`)
+    }
+
+    const startTime = Date.now()
+    debugLog('running tests')
+
+    testsRunning = true
+    await runTests(testSuiteOptions)
+
+    debugLog(`(${Date.now() - startTime} ms) done running tests`)
+    testEvents.emit('suiteFinished')
+
+    process.exitCode = errorCount > 0 ? 1 : 0
+
+    if (exitedEarly) {
+        // We need to forcefully end the process so that remaining tests end, and don't keep the process alive.
+        debugLog(`Sending kill signal SIGINT to self (process ID ${process.pid}) because the test suite is exiting early. There are ${process.listenerCount(`SIGINT`)} current listeners for this signal.`)
+        process.kill(process.pid, `SIGINT`)  // exit the process, but allow handlers to catch the `SIGINT` and clean up as necessary. This is a gentler alternative to `process.exit()`.
+    }
+}
+
+testEvents.once(`testRegistered`, runTestsAndHandleExiting) // Make sure tests run if a test module is run directly
+testEvents.once(`suiteLoading`, () => testEvents.removeListener(`testRegistered`, runTestsAndHandleExiting)) // If tests are being loaded via `test-all`, make sure test registration in test modules doesn't trigger test runs, since we need to wait for all modules to be loaded by `test-all`
+testEvents.once(`suiteLoaded`, runTestsAndHandleExiting)

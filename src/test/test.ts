@@ -1,4 +1,4 @@
-import test from '../index'
+import test from '../index.js'
 import * as assert from 'assert'
 
 const oneSecondMilliseconds = 1e3

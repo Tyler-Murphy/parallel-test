@@ -1,4 +1,4 @@
-import test from '../index'
+import test from '../index.js'
 import * as assert from 'assert'
 
 const randomDelay = () => new Promise(resolve => setTimeout(resolve, Math.round(Math.random() * 1e3)))

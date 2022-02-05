@@ -1,4 +1,4 @@
-import test from '../index'
+import test from '../index.js'
 import * as assert from 'assert'
 
 test('nice diff', () => assert.equal('hello', 'hallo'))

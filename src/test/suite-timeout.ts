@@ -2,7 +2,7 @@
  * Running this file manually should indicate that the two fast tests ran and the two slow tests didn't.
  */
 
-import test, { setTestSuiteOptions } from '../index'
+import test, { setTestSuiteOptions } from '../index.js'
 import * as assert from 'assert'
 
 setTestSuiteOptions({

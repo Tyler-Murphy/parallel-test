@@ -2,7 +2,7 @@
  * Running this file manually should indicate that the the first test ran and succeeded, the second test ran and failed, and that there was an unfinished test (the third one)
  */
 
-import test, { setTestSuiteOptions } from '../index'
+import test, { setTestSuiteOptions } from '../index.js'
 import * as assert from 'assert'
 
 setTestSuiteOptions({
