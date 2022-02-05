@@ -4,13 +4,15 @@ I made this because I didn't find another runner that runs all tests at once.
 
 ### Usage
 
+**As of v3.0.0, [ESM](https://nodejs.org/api/esm.html) is required**
+
 An assertion library isn't included, so use whichever you'd like. I like to use node's `assert` library. If the errors thrown include `expected` and `actual` properties (like in the node `assert` library), a diff will be displayed.
 
 A test ends when its code finishes running, or the promise it returns has settled.
 
 TAP messages are printed, so feel free to use whichever TAP formatter you like. [Tape has a nice list.](https://github.com/substack/tape#pretty-reporters)
 
-As soon as a test is registered, the test suite run will be queued to run in a `setImmediate` callback. This means that tests must be registered synchronously after the first test is registered.
+Tests must be registered synchronously after the first test is registered.
 
 Events are emitted as tests run. The emitter is exported as `testEvents` from the main file. It's typed, so inspect its types to see which events are available.
 
