@@ -75,7 +75,7 @@ function test(description: Test['description'], testFunction: Test['testFunction
 
     tests.push(test)
 
-    setImmediate(() => testEvents.emit(`suiteLoaded`))
+    setImmediate(() => testEvents.emit(`testRegistered`))
 }
 
 function setTestSuiteOptions(newOptions: Partial<TestSuiteOptions>): void {
